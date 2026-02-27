@@ -1,0 +1,24 @@
+name = "autonomy"
+main = "src/index.js"
+compatibility_date = "2026-02-27"
+
+account_id = "4b05237351888b9aa815de0b5802f328"
+workers_dev = true
+
+# D1 Database for storing users, businesses, opportunities
+[[d1_databases]]
+binding = "DB"
+database_name = "autonomy_db"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# KV for caching
+[[kv_namespaces]]
+binding = "CACHE"
+id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+[env.production]
+name = "autonomy-prod"
+vars = { ENVIRONMENT = "production" }
