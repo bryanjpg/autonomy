@@ -7,6 +7,13 @@
 
 import { findOpportunities } from "./opportunity-discovery.js";
 import { scoreOpportunities } from "./scoring.js";
+import {
+  generateTokenNarrative,
+  buildTokenCommunity,
+  createTokenLaunchPlan,
+  estimateTokenROI,
+  analyzeTokenMarket,
+} from "./token-launcher.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -25,6 +32,21 @@ export default {
     // Get business templates
     if (url.pathname === "/api/templates" && request.method === "GET") {
       return handleGetTemplates();
+    }
+
+    // Token launcher: Generate narratives
+    if (url.pathname === "/api/tokens/narratives" && request.method === "POST") {
+      return handleTokenNarratives(request);
+    }
+
+    // Token launcher: Get full launch plan
+    if (url.pathname === "/api/tokens/launch-plan" && request.method === "POST") {
+      return handleTokenLaunchPlan(request);
+    }
+
+    // Token launcher: Analyze market
+    if (url.pathname === "/api/tokens/market" && request.method === "GET") {
+      return handleTokenMarket();
     }
 
     return json({ error: "Not Found" }, 404);
@@ -166,6 +188,106 @@ function handleGetTemplates() {
     templates,
     count: templates.length,
   });
+}
+
+// Token Handlers
+
+async function handleTokenNarratives(request) {
+  try {
+    const { goal, interests } = await request.json();
+
+    if (!goal) {
+      return json(
+        {
+          error:
+            "Missing required field: goal (e.g., 'Make me $20K with tokens')",
+        },
+        400
+      );
+    }
+
+    const narratives = await generateTokenNarrative(goal, interests || []);
+
+    return json({
+      success: true,
+      goal,
+      narratives: narratives.map((n) => ({
+        id: n.id,
+        name: n.name,
+        angle: n.angle,
+        meme: n.meme,
+        targetAudience: n.targetAudience,
+        expectedROI: n.expectedROI,
+        pros: n.pros,
+        cons: n.cons,
+        launchTweet: n.launchTweet,
+      })),
+      nextStep: "Pick one narrative and we'll generate your full launch plan",
+    });
+  } catch (error) {
+    console.error("Error generating token narratives:", error);
+    return json(
+      { error: error.message || "Failed to generate narratives" },
+      500
+    );
+  }
+}
+
+async function handleTokenLaunchPlan(request) {
+  try {
+    const { narrativeId, goal } = await request.json();
+
+    if (!narrativeId) {
+      return json({ error: "Missing required field: narrativeId" }, 400);
+    }
+
+    const narratives = await generateTokenNarrative(goal || "Make money");
+    const narrative = narratives.find((n) => n.id === narrativeId);
+
+    if (!narrative) {
+      return json({ error: "Narrative not found" }, 404);
+    }
+
+    const community = await buildTokenCommunity(narrative);
+    const launchPlan = createTokenLaunchPlan(narrative);
+    const roi = estimateTokenROI(500);
+
+    return json({
+      success: true,
+      narrative: narrative.name,
+      launchPlan,
+      community,
+      roi: roi.scenarios,
+      portfolio: roi.portfolioApproach,
+      nextStep:
+        "Ready to launch! Follow the plan and post the launch tweet to Clanker.world",
+    });
+  } catch (error) {
+    console.error("Error creating token launch plan:", error);
+    return json(
+      { error: error.message || "Failed to create launch plan" },
+      500
+    );
+  }
+}
+
+async function handleTokenMarket() {
+  try {
+    const analysis = await analyzeTokenMarket();
+
+    return json({
+      success: true,
+      ...analysis,
+      advice:
+        "If market is HOT, launch now. Build community → post launch tweet → hype for 7 days → exit or rebuild",
+    });
+  } catch (error) {
+    console.error("Error analyzing token market:", error);
+    return json(
+      { error: error.message || "Failed to analyze market" },
+      500
+    );
+  }
 }
 
 // Helper
